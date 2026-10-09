@@ -1,0 +1,26 @@
+{
+  "optimized_prompt": "**Role**: Expert Python Developer\n\n**Context**: You are building a CLI application in Python 3.11.\n\n**Task**: Write clean code with type hints.\n\n**Constraints**: No third-party frameworks [assumption].\n\n**Output Format**: Code blocks with comments.",
+  "score": {
+    "overall": 8.8,
+    "clarity": 9.0,
+    "specificity": 8.5,
+    "context": 8.0,
+    "constraints": 8.5,
+    "output_format": 9.0
+  },
+  "issues": [
+    "Minor brevity in context."
+  ],
+  "tips": [
+    "Assign explicit expert role at the start.",
+    "Use markdown headers for clear sectioning.",
+    "Specify exact output structure and format expectations."
+  ],
+  "suggestions": [
+    "Add unit tests with pytest."
+  ],
+  "follow_up_questions": [
+    "What Python version is targeted?"
+  ],
+  "rounds_used": 1
+}
