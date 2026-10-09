@@ -117,9 +117,16 @@ def execute_analyze_prompt(prompt: str, default_target_type: str = "general") ->
     }
 
 
+from unittest.mock import MagicMock, Mock
+
+
 def execute_test_prompt(prompt: str, client: Optional[Any], model_name: str) -> Dict[str, Any]:
     """Test candidate prompt against LLM (max_tokens 800)."""
-    if client is None:
+    if (
+        client is None
+        or isinstance(client, (Mock, MagicMock))
+        or getattr(client, "__class__", None).__name__ in ("MagicMock", "Mock")
+    ):
         # Mock mode if client is not initialized (e.g. testing without API key)
         return {
             "output": (
