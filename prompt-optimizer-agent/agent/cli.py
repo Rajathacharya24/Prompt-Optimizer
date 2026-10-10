@@ -9,13 +9,14 @@ from rich.syntax import Syntax
 from rich.table import Table
 
 from .agent import optimize
+from .benchmark import run_benchmark
 from .schemas import OptimizerResult
 
 
 def main() -> None:
-    """CLI entry point for prompt optimization."""
+    """CLI entry point for prompt optimization and benchmarking."""
     parser = argparse.ArgumentParser(
-        description="Prompt Optimizer Agent - Iteratively refine AI prompts with LLM tool use."
+        description="Prompt Optimizer Agent - Iteratively refine AI prompts with multi-LLM support."
     )
     parser.add_argument(
         "prompt",
@@ -36,6 +37,23 @@ def main() -> None:
         default="detailed",
         help="Desired tone/style of optimized prompt (default: detailed).",
     )
+    parser.add_argument(
+        "--provider",
+        choices=["anthropic", "openai", "gemini", "ollama", "mock"],
+        default=None,
+        help="LLM provider name (default: env MODEL_PROVIDER or anthropic).",
+    )
+    parser.add_argument(
+        "--model",
+        dest="model_name",
+        default=None,
+        help="Specific LLM model identifier (default: env MODEL_NAME or provider default).",
+    )
+    parser.add_argument(
+        "--benchmark",
+        action="store_true",
+        help="Run comparative benchmark evaluating raw vs. optimized prompt output performance.",
+    )
 
     args = parser.parse_args()
     console = Console()
@@ -44,6 +62,8 @@ def main() -> None:
     input_prompt = args.prompt
     target_type = args.target_type
     tone = args.tone
+    provider = args.provider
+    model_name = args.model_name
 
     if not input_prompt:
         console.print(
@@ -58,6 +78,13 @@ def main() -> None:
             console.print("[bold red]Error:[/bold red] Prompt cannot be empty.")
             sys.exit(1)
 
+        if not provider:
+            provider = Prompt.ask(
+                "[bold green]Select Provider[/bold green]",
+                choices=["anthropic", "openai", "gemini", "ollama", "mock"],
+                default="anthropic",
+            )
+
         target_type = Prompt.ask(
             "[bold green]Select Target Type[/bold green]",
             choices=["coding", "writing", "image", "data analysis", "general"],
@@ -70,13 +97,23 @@ def main() -> None:
         )
 
     try:
-        result: OptimizerResult = optimize(
-            prompt=input_prompt,
-            target_type=target_type,
-            tone=tone,
-        )
-
-        _render_summary(console, result)
+        if args.benchmark:
+            run_benchmark(
+                prompt=input_prompt,
+                provider=provider or "anthropic",
+                model_name=model_name,
+                target_type=target_type,
+                tone=tone,
+            )
+        else:
+            result: OptimizerResult = optimize(
+                prompt=input_prompt,
+                target_type=target_type,
+                tone=tone,
+                provider=provider,
+                model_name=model_name,
+            )
+            _render_summary(console, result)
 
     except KeyboardInterrupt:
         console.print("\n[yellow]Optimization session cancelled by user.[/yellow]")
