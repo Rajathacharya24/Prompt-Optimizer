@@ -120,8 +120,15 @@ def execute_analyze_prompt(prompt: str, default_target_type: str = "general") ->
 from unittest.mock import MagicMock, Mock
 
 
-def execute_test_prompt(prompt: str, client: Optional[Any], model_name: str) -> Dict[str, Any]:
+def execute_test_prompt(prompt: str, client: Optional[Any] = None, model_name: str = "claude-3-5-sonnet-20241022", adapter: Optional[Any] = None) -> Dict[str, Any]:
     """Test candidate prompt against LLM (max_tokens 800)."""
+    if adapter is not None:
+        try:
+            output = adapter.test_prompt(prompt, max_tokens=800)
+            return {"output": output}
+        except Exception as e:
+            return {"error": f"LLM prompt test execution failed: {str(e)}"}
+
     if (
         client is None
         or isinstance(client, (Mock, MagicMock))
@@ -173,8 +180,9 @@ def dispatch_tool_call(
         elif tool_name == "test_prompt":
             prompt = tool_args.get("prompt", "")
             client = context.get("client")
+            adapter = context.get("adapter")
             model_name = context.get("model_name", "claude-3-5-sonnet-20241022")
-            return execute_test_prompt(prompt, client, model_name)
+            return execute_test_prompt(prompt=prompt, client=client, model_name=model_name, adapter=adapter)
 
         elif tool_name == "ask_user":
             question = tool_args.get("question", "")
