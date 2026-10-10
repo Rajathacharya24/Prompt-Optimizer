@@ -164,10 +164,10 @@ def optimize(
         tool_results_content: List[Dict[str, Any]] = []
         finalized_in_this_step = False
 
-        for tool_block in tool_use_blocks:
-            tool_name = tool_block.name
-            tool_args = tool_block.input
-            tool_id = tool_block.id
+        for tool_call in llm_response.tool_calls:
+            tool_name = tool_call.name
+            tool_args = tool_call.args
+            tool_id = tool_call.id
 
             console.print(
                 f"[bold magenta][Step {step_count} Tool Call][/bold magenta] "
@@ -178,6 +178,13 @@ def optimize(
                 {"tool_name": tool_name, "tool_args": tool_args},
                 step_count,
             )
+
+            context_data = {
+                "adapter": llm_adapter,
+                "client": client,
+                "target_type": target_type,
+                "user_input_fn": user_input_fn,
+            }
 
             # Rule Enforcements & Dispatching
             if tool_name == "ask_user":
@@ -196,9 +203,7 @@ def optimize(
                         {"question": question, "call_count": ask_user_calls},
                         step_count,
                     )
-                    tool_res = dispatch_tool_call(
-                        tool_name, tool_args, {"user_input_fn": user_input_fn}
-                    )
+                    tool_res = dispatch_tool_call(tool_name, tool_args, context_data)
 
             elif tool_name == "test_prompt":
                 draft_rounds += 1
@@ -216,11 +221,6 @@ def optimize(
                     step_count,
                 )
 
-                context_data = {
-                    "client": client,
-                    "model_name": model_name,
-                    "target_type": target_type,
-                }
                 tool_res = dispatch_tool_call(tool_name, tool_args, context_data)
                 if draft_rounds >= 3 and isinstance(tool_res, dict):
                     tool_res["limit_notice"] = (
@@ -253,12 +253,6 @@ def optimize(
                         )
 
             else:
-                context_data = {
-                    "client": client,
-                    "model_name": model_name,
-                    "target_type": target_type,
-                    "user_input_fn": user_input_fn,
-                }
                 tool_res = dispatch_tool_call(tool_name, tool_args, context_data)
 
             console.print(
