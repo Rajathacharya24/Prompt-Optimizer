@@ -11,6 +11,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.syntax import Syntax
 
+from .adapters import BaseLLMAdapter, ToolCall, get_adapter
 from .schemas import Event, EventType, OptimizerResult
 from .system_prompt import get_system_prompt
 from .tools import TOOLS_DEFINITIONS, dispatch_tool_call
@@ -36,8 +37,11 @@ def optimize(
     prompt: str,
     target_type: str = "general",
     tone: str = "detailed",
+    provider: Optional[str] = None,
+    model_name: Optional[str] = None,
     on_event: Optional[Callable[[Event], None]] = None,
     client: Optional[Any] = None,
+    adapter: Optional[BaseLLMAdapter] = None,
     user_input_fn: Optional[Callable[[str], str]] = None,
 ) -> OptimizerResult:
     """Main function executing the prompt optimization loop.
@@ -46,8 +50,11 @@ def optimize(
         prompt: The user's rough starting prompt.
         target_type: Target category ('coding', 'writing', 'image', 'data analysis', 'general').
         tone: Desired prompt tone ('concise', 'detailed', 'step-by-step', 'expert').
+        provider: LLM provider name ('anthropic', 'openai', 'gemini', 'ollama', 'mock').
+        model_name: Specific model identifier.
         on_event: Optional callback receiving step Event objects.
-        client: Optional Anthropic SDK client (allows passing mock clients for tests).
+        client: Legacy parameter for passing mock or custom Anthropic client.
+        adapter: Optional custom BaseLLMAdapter instance.
         user_input_fn: Optional function to provide user answer for ask_user calls.
 
     Returns:
@@ -57,17 +64,14 @@ def optimize(
 
     start_time = time.time()
     console = Console()
-    model_name = os.getenv("MODEL_NAME", "claude-3-5-sonnet-20241022")
 
-    if client is None:
-        api_key = os.getenv("ANTHROPIC_API_KEY")
-        if not api_key:
-            raise ValueError(
-                "ANTHROPIC_API_KEY is not set. Please add it to your .env file or environment."
-            )
-        from anthropic import Anthropic
-
-        client = Anthropic(api_key=api_key)
+    # Resolve LLM adapter
+    if adapter is not None:
+        llm_adapter = adapter
+    elif client is not None:
+        llm_adapter = get_adapter(provider="anthropic", model_name=model_name, client=client)
+    else:
+        llm_adapter = get_adapter(provider=provider, model_name=model_name)
 
     system_prompt = get_system_prompt(target_type=target_type, tone=tone)
 
@@ -102,6 +106,7 @@ def optimize(
         Panel(
             f"[bold cyan]Starting Prompt Optimization[/bold cyan]\n"
             f"[bold yellow]Initial Prompt:[/bold yellow] {prompt}\n"
+            f"[bold green]Provider:[/bold green] {llm_adapter.__class__.__name__} ({llm_adapter.model_name})\n"
             f"[bold green]Target Type:[/bold green] {target_type} | [bold green]Tone:[/bold green] {tone}",
             title="Prompt Optimizer Agent",
             border_style="cyan",
@@ -132,35 +137,22 @@ def optimize(
             )
 
         try:
-            response = client.messages.create(
-                model=model_name,
-                max_tokens=2048,
-                system=system_prompt,
+            llm_response = llm_adapter.generate(
                 messages=messages,
+                system=system_prompt,
                 tools=TOOLS_DEFINITIONS,
+                max_tokens=2048,
             )
         except Exception as e:
             emit(EventType.ERROR, {"error": str(e)}, step_count)
-            raise RuntimeError(f"Anthropic API call failed at step {step_count}: {str(e)}")
+            raise RuntimeError(f"LLM API call failed at step {step_count}: {str(e)}")
 
-        content_blocks = getattr(response, "content", [])
+        if llm_response.text:
+            console.print(f"[bold blue][Step {step_count}/8 Thinking][/bold blue]\n{llm_response.text}")
+            emit(EventType.THINKING, {"text": llm_response.text}, step_count)
 
-        # Log thinking text
-        text_parts = [
-            block.text for block in content_blocks if getattr(block, "type", None) == "text"
-        ]
-        if text_parts:
-            combined_text = "\n".join(text_parts)
-            console.print(f"[bold blue][Step {step_count}/8 Thinking][/bold blue]\n{combined_text}")
-            emit(EventType.THINKING, {"text": combined_text}, step_count)
-
-        tool_use_blocks = [
-            block for block in content_blocks if getattr(block, "type", None) == "tool_use"
-        ]
-
-        messages.append({"role": "assistant", "content": content_blocks})
-
-        if not tool_use_blocks:
+        if not llm_response.tool_calls:
+            messages.append({"role": "assistant", "content": llm_response.text})
             messages.append(
                 {
                     "role": "user",
