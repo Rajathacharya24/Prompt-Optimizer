@@ -115,12 +115,16 @@ Prompt-Optimizer/
 └── prompt-optimizer-agent/     # Python package root
     ├── agent/                  # Core package modules
     │   ├── __init__.py         # Package exports
+    │   ├── adapters.py         # Multi-LLM provider adapters (Anthropic, OpenAI, Gemini, Ollama, Mock)
     │   ├── agent.py            # Main optimization loop
+    │   ├── benchmark.py        # Side-by-side comparative benchmark runner
     │   ├── cli.py              # CLI entry point
     │   ├── schemas.py          # Pydantic data models
     │   ├── system_prompt.py    # Prompt engineering system prompt
     │   └── tools.py            # Tool definitions & dispatcher
     └── tests/                  # Test suite
+        ├── test_adapters.py    # Unit tests for provider adapters
+        ├── test_benchmark.py   # Unit tests for comparative benchmark runner
         └── test_loop.py        # Unit tests for loop & edge cases
 ```
 
