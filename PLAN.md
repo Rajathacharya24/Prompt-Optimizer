@@ -93,10 +93,10 @@ graph TD
 - [x] Schema validation via Pydantic models.
 - [x] Isolated test suite (`tests/test_loop.py`) with mock Anthropic client.
 
-### Phase 2: Multi-LLM Provider Support
-- [ ] Add adapter support for OpenAI (`gpt-4o`), Google Gemini, and local Ollama models.
-- [ ] Configurable model selection via environment variables (`MODEL_PROVIDER`, `MODEL_NAME`).
-- [ ] Comparative benchmark runner evaluating raw vs optimized prompt performance side-by-side.
+### Phase 2: Multi-LLM Provider Support (Completed)
+- [x] Add adapter support for OpenAI (`gpt-4o`), Google Gemini, and local Ollama models.
+- [x] Configurable model selection via environment variables (`MODEL_PROVIDER`, `MODEL_NAME`) and CLI flags (`--provider`, `--model`).
+- [x] Comparative benchmark runner evaluating raw vs optimized prompt performance side-by-side.
 
 ### Phase 3: Web Dashboard & API Server
 - [ ] FastAPI backend wrapping `optimize()` for async execution.

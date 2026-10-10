@@ -1,0 +1,50 @@
+{
+  "timestamp": "2026-10-10T21:33:16.738781",
+  "provider": "MockAdapter",
+  "model_name": "mock-benchmark",
+  "raw_prompt": "Build API",
+  "optimized_prompt": "**Role**: Python Expert\n**Task**: Create API endpoint\n**Output Format**: Markdown code block",
+  "optimizer_result": {
+    "optimized_prompt": "**Role**: Python Expert\n**Task**: Create API endpoint\n**Output Format**: Markdown code block",
+    "score": {
+      "overall": 9.0,
+      "clarity": 9.0,
+      "specificity": 9.0,
+      "context": 9.0,
+      "constraints": 9.0,
+      "output_format": 9.0
+    },
+    "issues": [],
+    "tips": [
+      "Tip 1",
+      "Tip 2",
+      "Tip 3"
+    ],
+    "suggestions": [
+      "Suggestion 1"
+    ],
+    "follow_up_questions": [],
+    "rounds_used": 1
+  },
+  "optimization_time_sec": 0.01,
+  "raw_benchmark": {
+    "output_text": "[Mock Sandbox Execution Output for: 'Build API...']",
+    "latency_sec": 0.0,
+    "word_count": 7,
+    "char_count": 51,
+    "headers_count": 0,
+    "code_blocks_count": 0,
+    "bullet_points_count": 0,
+    "structure_score": 1.0
+  },
+  "optimized_benchmark": {
+    "output_text": "[Mock Sandbox Execution Output for: '**Role**: Python Expert\n**Task**: Create...']",
+    "latency_sec": 0.0,
+    "word_count": 10,
+    "char_count": 82,
+    "headers_count": 0,
+    "code_blocks_count": 0,
+    "bullet_points_count": 0,
+    "structure_score": 1.0
+  }
+}
