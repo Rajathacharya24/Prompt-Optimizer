@@ -10,6 +10,21 @@ An autonomous, tool-augmented LLM agent that turns rough prompts into precise, s
 - **Built-in safety limits**: Enforces a max of 8 LLM steps, 3 draft rounds, 2 clarification questions, and a 90-second session timeout.
 - **Multi-provider support**: Works with Anthropic, OpenAI, Gemini, Ollama, and a mock adapter for local tests.
 
+## Project Status
+
+This project is functionally complete for the core prompt-optimization workflow and is validated by automated tests.
+
+| Area | Status | Notes |
+| --- | --- | --- |
+| Core optimizer loop | ✅ Complete | Prompt analysis, refinement loop, guardrails, and finalization are implemented. |
+| Multi-provider adapters | ✅ Complete | Anthropic, OpenAI, Gemini, Ollama, and mock adapters are supported. |
+| CLI interface | ✅ Complete | Interactive and direct CLI execution are working. |
+| Benchmarking | ✅ Complete | Raw-vs-optimized prompt comparison is implemented. |
+| Test coverage | ✅ Complete | Automated tests validate the main behaviors and edge cases. |
+| Web dashboard / API server | ⏳ Planned | Future enhancement beyond the current core release. |
+
+**Overall completion:** approximately 85–90% of the planned core project is complete. The working agent, CLI, provider support, and tests are all in place; the remaining work is in the optional web/API expansion roadmap.
+
 ## Requirements
 
 - Python 3.10+
