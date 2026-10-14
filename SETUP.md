@@ -13,15 +13,26 @@ Make sure your device has:
 
 ## 2. Clone the project
 
+On Linux/macOS:
+
 ```bash
+git clone https://github.com/Rajathacharya24/Prompt-Optimizer.git
+cd Prompt-Optimizer
+```
+
+On Windows PowerShell:
+
+```powershell
 git clone https://github.com/Rajathacharya24/Prompt-Optimizer.git
 cd Prompt-Optimizer
 ```
 
 ## 3. Create a virtual environment (recommended)
 
+On Linux/macOS:
+
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 ```
 
@@ -41,10 +52,21 @@ pip install -r requirements.txt
 
 ## 5. Set environment variables
 
-For the default Anthropic setup, set your API key:
+On Linux/macOS, set variables in the current shell:
 
 ```bash
 export ANTHROPIC_API_KEY="your-api-key-here"
+export OPENAI_API_KEY="your-openai-key"
+export GEMINI_API_KEY="your-gemini-key"
+export GOOGLE_API_KEY="your-google-key"
+export MODEL_NAME="claude-3-5-sonnet-20241022"
+```
+
+To make them persist for future shell sessions, add them to `~/.bashrc` or `~/.zshrc`:
+
+```bash
+echo 'export ANTHROPIC_API_KEY="your-api-key-here"' >> ~/.bashrc
+source ~/.bashrc
 ```
 
 On Windows PowerShell:
@@ -62,21 +84,29 @@ export GOOGLE_API_KEY="your-google-key"
 export MODEL_NAME="claude-3-5-sonnet-20241022"
 ```
 
-## 6. Run the project
+## 6. Run the project on Linux
+
+### Activate the virtual environment
+
+```bash
+source .venv/bin/activate
+```
 
 ### Interactive CLI
 
 ```bash
+cd prompt-optimizer-agent
 python -m agent.cli
 ```
 
 ### Direct prompt optimization
 
 ```bash
+cd prompt-optimizer-agent
 python -m agent.cli "Write a python script to parse CSV files" --type coding --tone detailed
 ```
 
-## 7. Run tests
+## 7. Run tests on Linux
 
 From the project root:
 
