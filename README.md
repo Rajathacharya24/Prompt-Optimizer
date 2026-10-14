@@ -117,6 +117,3 @@ Prompt-Optimizer/
 
 See [PLAN.md](PLAN.md) for the full architecture, operational guardrails, and roadmap.
 
-## License
-
-This project is licensed under the [MIT License](LICENSE).
