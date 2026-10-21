@@ -414,20 +414,34 @@ def get_adapter(
     client: Optional[Any] = None,
 ) -> BaseLLMAdapter:
     """Factory function to resolve and instantiate the requested provider adapter."""
-    provider_name = (provider or os.getenv("MODEL_PROVIDER", "anthropic")).lower().strip()
+    configured_provider = (provider or os.getenv("MODEL_PROVIDER") or "").strip().lower()
+    if not configured_provider:
+        configured_provider = (
+            "mock"
+            if not any(
+                os.getenv(env_name)
+                for env_name in (
+                    "ANTHROPIC_API_KEY",
+                    "OPENAI_API_KEY",
+                    "GEMINI_API_KEY",
+                    "GOOGLE_API_KEY",
+                )
+            )
+            else "anthropic"
+        )
 
-    if provider_name == "anthropic":
+    if configured_provider == "anthropic":
         return AnthropicAdapter(model_name=model_name, api_key=api_key, client=client)
-    elif provider_name == "openai":
+    elif configured_provider == "openai":
         return OpenAIAdapter(model_name=model_name, api_key=api_key, client=client)
-    elif provider_name == "gemini":
+    elif configured_provider == "gemini":
         return GeminiAdapter(model_name=model_name, api_key=api_key, client=client)
-    elif provider_name == "ollama":
+    elif configured_provider == "ollama":
         return OllamaAdapter(model_name=model_name)
-    elif provider_name == "mock":
+    elif configured_provider == "mock":
         return MockAdapter(model_name=model_name or "mock-model")
     else:
         raise ValueError(
-            f"Unsupported MODEL_PROVIDER '{provider_name}'. "
+            f"Unsupported MODEL_PROVIDER '{configured_provider}'. "
             "Supported providers: 'anthropic', 'openai', 'gemini', 'ollama', 'mock'."
         )
