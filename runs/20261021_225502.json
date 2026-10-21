@@ -1,0 +1,24 @@
+{
+  "optimized_prompt": "**Role**: Senior Python Developer\n\n**Context**: You are writing a clear, production-ready Python helper for a CLI or library workflow.\n\n**Task**: Write a Python function that solves the user request with clean naming, type hints, and concise comments.\n\n**Constraints**: Use standard Python 3 features only; keep the function readable; handle edge cases safely; return a clear result or output.\n\n**Output Format**: Provide a single Python code block and a brief explanation of the design choices.\n\n**Examples**: Example input and expected output should be included if helpful.",
+  "score": {
+    "overall": 9.2,
+    "clarity": 9.5,
+    "specificity": 9.0,
+    "context": 8.8,
+    "constraints": 9.0,
+    "output_format": 9.4
+  },
+  "issues": [
+    "The original request is brief and lacks explicit output expectations."
+  ],
+  "tips": [
+    "Assign a clear AI role upfront.",
+    "Specify the exact expected output format.",
+    "Include constraints, edge cases, and the target environment."
+  ],
+  "suggestions": [
+    "Include a short example if the task is non-trivial."
+  ],
+  "follow_up_questions": [],
+  "rounds_used": 1
+}

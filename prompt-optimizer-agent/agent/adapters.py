@@ -384,6 +384,49 @@ class MockAdapter(BaseLLMAdapter):
         self.responses = responses or []
         self.call_count = 0
 
+    def _default_responses(self) -> List[LLMResponse]:
+        """Return a valid offline optimization sequence: analyze, test, finalize."""
+        prompt_text = "Write a Python function"
+        return [
+            LLMResponse(
+                text="Analyzing the rough prompt and identifying missing structure.",
+                tool_calls=[ToolCall(id="mock_analyze", name="analyze_prompt", args={"prompt": prompt_text})],
+            ),
+            LLMResponse(
+                text="Testing the drafted prompt candidate for clarity and completeness.",
+                tool_calls=[ToolCall(id="mock_test", name="test_prompt", args={"prompt": "Role: Python Expert\nTask: Write a clear, production-ready Python function with type hints and comments."})],
+            ),
+            LLMResponse(
+                text="Finalizing the optimized prompt with a strong structure and measured score.",
+                tool_calls=[ToolCall(
+                    id="mock_finalize",
+                    name="finalize",
+                    args={
+                        "result": {
+                            "optimized_prompt": "**Role**: Senior Python Developer\n\n**Context**: You are writing a clear, production-ready Python helper for a CLI or library workflow.\n\n**Task**: Write a Python function that solves the user request with clean naming, type hints, and concise comments.\n\n**Constraints**: Use standard Python 3 features only; keep the function readable; handle edge cases safely; return a clear result or output.\n\n**Output Format**: Provide a single Python code block and a brief explanation of the design choices.\n\n**Examples**: Example input and expected output should be included if helpful.",
+                            "score": {
+                                "overall": 9.2,
+                                "clarity": 9.5,
+                                "specificity": 9.0,
+                                "context": 8.8,
+                                "constraints": 9.0,
+                                "output_format": 9.4,
+                            },
+                            "issues": ["The original request is brief and lacks explicit output expectations."],
+                            "tips": [
+                                "Assign a clear AI role upfront.",
+                                "Specify the exact expected output format.",
+                                "Include constraints, edge cases, and the target environment.",
+                            ],
+                            "suggestions": ["Include a short example if the task is non-trivial."],
+                            "follow_up_questions": [],
+                            "rounds_used": 1,
+                        }
+                    },
+                )],
+            ),
+        ]
+
     def generate(
         self,
         messages: List[Dict[str, Any]],
@@ -396,12 +439,15 @@ class MockAdapter(BaseLLMAdapter):
             self.call_count += 1
             return res
 
-        # Default fallback mock behavior
+        defaults = self._default_responses()
+        if self.call_count < len(defaults):
+            res = defaults[self.call_count]
+            self.call_count += 1
+            return res
+
+        final_response = defaults[-1]
         self.call_count += 1
-        return LLMResponse(
-            text="Mock agent reasoning step.",
-            tool_calls=[ToolCall(id="mock_1", name="analyze_prompt", args={"prompt": "test prompt"})],
-        )
+        return final_response
 
     def test_prompt(self, prompt: str, max_tokens: int = 800) -> str:
         return f"[Mock Sandbox Execution Output for: '{prompt[:40]}...']"
