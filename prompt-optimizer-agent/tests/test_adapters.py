@@ -37,6 +37,22 @@ def test_get_adapter_factory() -> None:
         get_adapter(provider="unknown_provider")
 
 
+def test_get_adapter_uses_mock_when_no_api_keys_are_configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Default to the fast offline mock provider when nothing is configured."""
+    for env_name in [
+        "MODEL_PROVIDER",
+        "ANTHROPIC_API_KEY",
+        "OPENAI_API_KEY",
+        "GEMINI_API_KEY",
+        "GOOGLE_API_KEY",
+        "MODEL_NAME",
+    ]:
+        monkeypatch.delenv(env_name, raising=False)
+
+    adapter = get_adapter()
+    assert isinstance(adapter, MockAdapter)
+
+
 def test_mock_adapter_generate_and_test() -> None:
     """Test MockAdapter response generation and sandbox testing."""
     custom_responses = [
