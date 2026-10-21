@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prompt-optimizer"
+version = "0.1.0"
+description = "Autonomous prompt optimization agent for refining rough prompts into structured, high-performing instructions."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "anthropic>=0.40.0",
+  "python-dotenv>=1.0.0",
+  "pydantic>=2.0.0",
+  "rich>=13.0.0",
+]
+
+[project.scripts]
+prompt-optimizer = "agent.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "prompt-optimizer-agent"}
+
+[tool.setuptools.packages.find]
+where = ["prompt-optimizer-agent"]
