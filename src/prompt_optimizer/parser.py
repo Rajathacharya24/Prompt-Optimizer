@@ -98,9 +98,7 @@ def parse_raw_idea(raw_text: str) -> StructuredIdea:
     lines = [line.strip() for line in text.split("\n") if line.strip()]
     labeled = _extract_labeled_fields(lines)
     inline_labeled = _extract_inline_labeled_fields(text)
-    for key, value in inline_labeled.items():
-        if key not in labeled:
-            labeled[key] = value
+    labeled.update(inline_labeled)
 
     problem_statement = labeled.get("problem_statement") or _infer_problem_statement(text)
     goal = labeled.get("goal") or "Produce a well-structured prompt from the raw idea"

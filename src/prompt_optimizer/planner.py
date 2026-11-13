@@ -3,6 +3,10 @@ from __future__ import annotations
 from .schemas import PromptBlueprint, StructuredIdea
 
 
+def _clean_fragment(value: str) -> str:
+    return value.strip().rstrip(".?!")
+
+
 def build_blueprint(idea: StructuredIdea) -> PromptBlueprint:
     execution_steps = [
         "Restate the task in one sentence to confirm intent",
@@ -25,8 +29,9 @@ def build_blueprint(idea: StructuredIdea) -> PromptBlueprint:
     ]
 
     task_summary = (
-        f"Solve: {idea.goal}. Audience: {idea.audience}. "
-        f"Deliver as: {idea.output_format}."
+        f"Solve: {_clean_fragment(idea.goal)}. "
+        f"Audience: {_clean_fragment(idea.audience)}. "
+        f"Deliver as: {_clean_fragment(idea.output_format)}."
     )
 
     return PromptBlueprint(
