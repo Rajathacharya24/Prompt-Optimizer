@@ -64,22 +64,5 @@ Read from a file:
 prompt-optimizer optimize --file idea.txt
 ```
 
-JSON output:
 
-```bash
-prompt-optimizer optimize --file idea.txt --json
-```
-
-## Project Layout
-
-```text
-src/prompt_optimizer/
-  cli.py
-  parser.py
-  planner.py
-  renderer.py
-  schemas.py
-  workflow.py
-tests/
-  test_workflow.py
 ```
