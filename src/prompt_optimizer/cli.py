@@ -47,6 +47,9 @@ def main() -> None:
 
     print("Structured Idea")
     print(json.dumps(result.structured_idea.to_dict(), indent=2))
+    print("Analysis")
+    if result.analysis:
+        print(json.dumps(result.analysis.to_dict(), indent=2))
     print("\nOptimized Prompt\n")
     print(result.optimized_prompt)
 

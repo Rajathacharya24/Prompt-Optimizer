@@ -16,12 +16,16 @@ dev = ["pytest>=8.0"]
 
 [project.scripts]
 prompt-optimizer = "prompt_optimizer.cli:main"
+prompt-optimizer-web = "prompt_optimizer.web:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+prompt_optimizer = ["ui/*.html"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
