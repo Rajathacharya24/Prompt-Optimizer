@@ -428,6 +428,9 @@
 
     lastPrompt = data.optimized_prompt;
     renderResult(data);
+    if (data.diary && data.diary.logged) {
+      append(`<span class="b">[diary ✓]</span> marked in logs/daily_log.md · streak <span class="ye">${data.diary.streak_days}d</span>`, "diaryline");
+    }
     busy = false;
     input.focus();
   };
