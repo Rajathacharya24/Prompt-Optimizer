@@ -300,10 +300,92 @@
     screen.scrollTop = screen.scrollHeight;
   };
 
+  const renderMarkdown = (md) => {
+    append("<span class='hr'>" + "─".repeat(64) + "</span>");
+    const out = document.createElement("div");
+    out.className = "out";
+    out.innerHTML = md.split("\n").map((line) => {
+      if (line.startsWith("# ")) return `<span class="h">${esc(line)}</span>`;
+      if (line.startsWith("## ")) return `<br><span class="h">${esc(line)}</span>`;
+      if (line.startsWith("**day summary") || line.startsWith("**today:")) return `<span class="h2">${esc(line)}</span>`;
+      if (line.startsWith("### ")) return `<span class="h">${esc(line)}</span>`;
+      if (line === "") return "&nbsp;";
+      return `<span class="body">${esc(line)}</span>`;
+    }).join("\n");
+    screen.appendChild(out);
+    append("<span class='hr'>" + "─".repeat(64) + "</span>");
+    screen.scrollTop = screen.scrollHeight;
+  };
+
+  const showLog = async () => {
+    if (busy) return;
+    busy = true;
+    append(`<span class="dim">cat logs/daily_log.md …</span>`, "line");
+    try {
+      const res = await fetch("/api/log");
+      const data = await res.json();
+      renderMarkdown(data.markdown || "(empty)");
+      const s = data.stats || {};
+      append(
+        `<span class="dim">today:</span> <span class="hl2">${s.sessions_today ?? 0} optimized</span> · ` +
+        `<span class="hl2">${s.manual_today ?? 0} manual</span> · <span class="hl2">${s.minutes_today ?? 0} min</span> · ` +
+        `<span class="ye">streak ${s.streak_days ?? 0}d</span> · lifetime ${s.total_entries ?? 0}`,
+        "line"
+      );
+    } catch (e) {
+      append(`<span class="b">[error]</span> ${esc(String(e.message || e))}`, "err");
+    }
+    busy = false;
+    screen.scrollTop = screen.scrollHeight;
+    input.focus();
+  };
+
+  const addManualLog = async (raw) => {
+    busy = true;
+    append(`<span class="pfx">➜ ~ </span><span class="body">${esc(raw)}</span>`, "line echo");
+    const body = raw.replace(/^\/log\s*/i, "");
+    const sep = body.indexOf("|");
+    const what = sep >= 0 ? body.slice(0, sep).trim() : body.trim();
+    const amount = sep >= 0 ? body.slice(sep + 1).trim() : "";
+    if (!what && !amount) {
+      append(`<span class="b">[warn]</span> usage: /log what you did | how much (e.g. /log built login page | 2 hrs)`, "err");
+      busy = false;
+      input.focus();
+      return;
+    }
+    try {
+      const res = await fetch("/api/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ what, amount }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      const mins = data.entry.minutes ? ` (${data.entry.minutes} min)` : "";
+      append(`<span class="b">[diary ✓]</span> marked "${esc(what)}" — "${esc(amount)}"${mins} · streak ${data.stats.streak_days}d`, "diaryline");
+    } catch (e) {
+      append(`<span class="b">[error]</span> ${esc(String(e.message || e))}`, "err");
+    }
+    busy = false;
+    input.focus();
+  };
+
   const run = async () => {
     const raw = input.value.trim();
     if (!raw || busy) {
       if (!raw) append(`<span class="b">[warn]</span> empty input — nothing to optimize`, "err");
+      return;
+    }
+    if (raw.toLowerCase().startsWith("/log")) {
+      input.value = "";
+      autoGrow();
+      await addManualLog(raw);
+      return;
+    }
+    if (raw.toLowerCase() === "/today" || raw.toLowerCase() === "/log view") {
+      input.value = "";
+      autoGrow();
+      await showLog();
       return;
     }
     busy = true;
