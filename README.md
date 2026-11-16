@@ -54,6 +54,21 @@ pip install -e .
 
 ## Run
 
+### Terminal-style Web UI (recommended)
+
+```bash
+python -m prompt_optimizer.web          # or: prompt-optimizer-web
+```
+
+Open http://127.0.0.1:7860 — black/grey/yellow terminal UI. Paste your raw idea,
+press Enter, get the optimized prompt with live analysis (task type, clarity,
+specificity, completeness scores) and improvement suggestions.
+`↑/↓` history, `Shift+Enter` newline, `[copy]` copies the result.
+
+Optional flags: `--host 0.0.0.0 --port 8000`
+
+### CLI
+
 ```bash
 prompt-optimizer optimize --idea "Goal: Explain our API migration plan to enterprise customers. Constraints: concise. Output: bullet list."
 ```
@@ -64,5 +79,16 @@ Read from a file:
 prompt-optimizer optimize --file idea.txt
 ```
 
+Add `--json` for machine-readable output (includes the analysis scores).
 
-```
+## Engine (v1.0)
+
+1. **Parser** — extracts labeled fields, infers the rest, detects task type
+   (code / analysis / writing / marketing / planning / learning / design).
+2. **Analyzer** — scores clarity, specificity, completeness (0-100) and emits
+   concrete suggestions for what would raise the score.
+3. **Planner** — task-type-aware process steps, quality bar, output schema,
+   and an expert role per domain.
+4. **Renderer** — emits a top-1% structured prompt: ROLE / CONTEXT / OBJECTIVE /
+   CONSTRAINTS / MUST INCLUDE / PROCESS / OUTPUT FORMAT / QUALITY BAR / TONE,
+   closed with an anti-hedging instruction so the model commits to an answer.`
