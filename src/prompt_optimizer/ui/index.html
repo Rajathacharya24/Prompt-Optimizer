@@ -112,6 +112,12 @@
   .sugg { color: var(--grey-dim); }
   .sugg .b { color: var(--yellow); }
 
+  .diaryline .b { color: var(--yellow); }
+  .diaryline { color: var(--grey-dim); }
+  .ye { color: var(--yellow); }
+  .hl2 { color: var(--grey); }
+  .out .h2 { color: var(--grey-dim); }
+
   .err { color: var(--yellow); }
   .err .b { color: var(--yellow); }
 
@@ -484,6 +490,8 @@
     boot();
     input.focus();
   });
+
+  logBtn.addEventListener("click", showLog);
 
   const boot = () => {
     append(BANNER, "banner");
