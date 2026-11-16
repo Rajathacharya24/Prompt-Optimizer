@@ -4,6 +4,7 @@ import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from . import diary
 from .workflow import optimize_raw_idea
 
 _UI_DIR = Path(__file__).resolve().parent / "ui"
