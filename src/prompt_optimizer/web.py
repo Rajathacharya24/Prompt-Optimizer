@@ -35,6 +35,17 @@ class OptimizerHandler(BaseHTTPRequestHandler):
         self._send(404, b"not found", "text/plain; charset=utf-8")
 
     def do_POST(self) -> None:
+        if self.path == "/api/log":
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                payload = json.loads(self.rfile.read(length) or b"{}")
+                entry = diary.log_manual(str(payload.get("what", "")), str(payload.get("amount", "")))
+                self._send_json(200, {"entry": entry, "markdown": diary.render_markdown(), "stats": diary.stats()})
+            except json.JSONDecodeError:
+                self._send_json(400, {"error": "Invalid JSON body"})
+            except Exception as exc:  # pragma: no cover - defensive
+                self._send_json(500, {"error": f"Log failure: {exc}"})
+            return
         if self.path != "/api/optimize":
             self._send(404, b"not found", "text/plain; charset=utf-8")
             return
@@ -46,7 +57,13 @@ class OptimizerHandler(BaseHTTPRequestHandler):
                 self._send_json(400, {"error": "Empty idea. Give me something to work with."})
                 return
             result = optimize_raw_idea(raw_idea)
-            self._send_json(200, result.to_dict())
+            payload = result.to_dict()
+            try:
+                entry = diary.log_session(result)
+                payload["diary"] = {"logged": True, "streak_days": diary.stats()["streak_days"]}
+            except Exception:  # logging must never break optimization
+                payload["diary"] = {"logged": False}
+            self._send_json(200, payload)
         except json.JSONDecodeError:
             self._send_json(400, {"error": "Invalid JSON body"})
         except Exception as exc:  # pragma: no cover - defensive

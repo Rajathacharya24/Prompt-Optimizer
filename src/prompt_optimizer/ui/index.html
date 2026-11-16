@@ -196,6 +196,7 @@
       <span class="seg fillhint">shift+enter=newline</span>
       <span class="seg fillhint">↑↓=history</span>
       <span class="spacer"></span>
+      <button class="btn" id="logBtn">[ log ]</button>
       <button class="btn" id="copyBtn">[ copy ]</button>
       <button class="btn" id="clearBtn">[ clear ]</button>
     </div>
@@ -207,6 +208,7 @@
   const input = document.getElementById("idea");
   const copyBtn = document.getElementById("copyBtn");
   const clearBtn = document.getElementById("clearBtn");
+  const logBtn = document.getElementById("logBtn");
 
   const history = [];
   let histIdx = -1;
