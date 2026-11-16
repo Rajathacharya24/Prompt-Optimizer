@@ -29,6 +29,9 @@ class OptimizerHandler(BaseHTTPRequestHandler):
         if self.path in ("/", "/index.html"):
             self._send(200, _INDEX.read_bytes(), "text/html; charset=utf-8")
             return
+        if self.path == "/api/log":
+            self._send_json(200, {"markdown": diary.render_markdown(), "stats": diary.stats()})
+            return
         self._send(404, b"not found", "text/plain; charset=utf-8")
 
     def do_POST(self) -> None:
