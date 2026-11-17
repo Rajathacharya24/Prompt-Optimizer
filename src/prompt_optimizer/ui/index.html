@@ -220,6 +220,7 @@
   let histIdx = -1;
   let lastPrompt = "";
   let busy = false;
+  let iv = null; // interview state: {idea, plan, step, qi, answers, taskType}
 
   const BANNER = [
     "  ___  ___  _ __   ___ _   _ ___ _   _  ___  _ __",
@@ -285,6 +286,13 @@
       return `<span class="body">${esc(line)}</span>`;
     }).join("\n");
     screen.appendChild(out);
+
+    if (r.improvements_applied && r.improvements_applied.length) {
+      append(`<span class="dim">improvements applied:</span>`, "line");
+      r.improvements_applied.forEach((s) => {
+        append(`  <span class="b">+</span> ${esc(s)}`, "sugg");
+      });
+    }
 
     if (r.analysis) {
       append(
