@@ -240,7 +240,16 @@ def analyze_raw_idea(
         word_count=len(text.split()),
         detected_signals=sorted(set(signal_tags)),
         suggestions=suggestions,
+        provided_fields=sorted(explicit_fields),
     )
+
+
+def apply_task_type_override(idea: StructuredIdea, task_type: str) -> bool:
+    if task_type and task_type in _ROLE_BY_TYPE and task_type != idea.task_type:
+        idea.task_type = task_type
+        idea.role = _ROLE_BY_TYPE[task_type]
+        return True
+    return False
 
 
 def _score_clarity(text: str) -> int:
