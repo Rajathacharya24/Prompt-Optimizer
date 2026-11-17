@@ -162,10 +162,10 @@ def _overlay_answers(idea, analysis, answers: dict[str, str], depth: str) -> tup
         answered.append("constraints")
 
     if depth == "quick":
-        constraint_parts.append("Keep the output minimal and skimmable; no filler")
+        constraint_parts.append("Keep the output minimal and skimmable with zero filler")
         improvements.append("depth set to quick/minimal")
     elif depth == "deep":
-        constraint_parts.append("Be thorough; cover edge cases, trade-offs, and failure modes")
+        constraint_parts.append("Be thorough and cover edge cases plus trade-offs")
         improvements.append("depth set to deep dive")
 
     if constraint_parts:
