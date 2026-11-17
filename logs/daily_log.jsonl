@@ -1,2 +1,4 @@
 {"date": "2026-11-16", "time": "22:38", "kind": "auto", "task_type": "writing", "word_count": 10, "score": 84, "minutes": 0, "what": "write a blog post about rust vs go, 800 words"}
 {"date": "2026-11-16", "time": "22:38", "kind": "manual", "task_type": "work-log", "what": "fixed ui styles", "amount": "1.5 hrs", "minutes": 90, "word_count": 0, "score": 0}
+{"date": "2026-11-17", "time": "21:22", "kind": "auto", "task_type": "code", "word_count": 29, "score": 79, "minutes": 0, "what": "Build a habit tracker web app with a dashboard\naudience: End users of the product\ntone: Friendly and conversational\ncons"}
+{"date": "2026-11-17", "time": "21:23", "kind": "auto", "task_type": "code", "word_count": 29, "score": 79, "minutes": 0, "what": "Build a habit tracker web app with a dashboard\naudience: End users of the product\ntone: Friendly and conversational\ncons"}

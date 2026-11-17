@@ -198,7 +198,7 @@
 
     <div class="statusbar">
       <span class="seg brand">OPTIMIZER</span>
-      <span class="seg fillhint">enter=run</span>
+      <span class="seg fillhint">enter=submit/answer</span>
       <span class="seg fillhint">shift+enter=newline</span>
       <span class="seg fillhint">↑↓=history</span>
       <span class="spacer"></span>
@@ -356,7 +356,6 @@
 
   const addManualLog = async (raw) => {
     busy = true;
-    append(`<span class="pfx">➜ ~ </span><span class="body">${esc(raw)}</span>`, "line echo");
     const body = raw.replace(/^\/log\s*/i, "");
     const sep = body.indexOf("|");
     const what = sep >= 0 ? body.slice(0, sep).trim() : body.trim();
@@ -384,44 +383,134 @@
     input.focus();
   };
 
-  const run = async () => {
-    const raw = input.value.trim();
-    if (!raw || busy) {
-      if (!raw) append(`<span class="b">[warn]</span> empty input — nothing to optimize`, "err");
-      return;
-    }
-    if (raw.toLowerCase().startsWith("/log")) {
-      input.value = "";
-      autoGrow();
-      await addManualLog(raw);
-      return;
-    }
-    if (raw.toLowerCase() === "/today" || raw.toLowerCase() === "/log view") {
-      input.value = "";
-      autoGrow();
-      await showLog();
-      return;
-    }
-    busy = true;
-    history.push(raw);
-    histIdx = history.length;
-
+  const echoInput = (raw) => {
     append(`<span class="pfx">➜ ~ </span><span class="body">${esc(raw)}</span>`, "line echo");
-    input.value = "";
-    autoGrow();
+  };
 
+  const printOptions = (opts, defaultLabel, skipDefault) => {
+    opts.forEach((o, i) => {
+      append(`    <span class="b">[${i + 1}]</span> <span class="dim">${esc(o.label)}</span>`, "line");
+    });
+    if (defaultLabel) {
+      append(`    <span class="dim">(enter = ${esc(defaultLabel)}${skipDefault ? " · or type your own" : ""})</span>`, "line");
+    } else {
+      append(`    <span class="dim">(enter = skip)</span>`, "line");
+    }
+  };
+
+  const askTypeStep = () => {
+    const opts = iv.plan.type_options;
+    append(`<span class="b">[?]</span> <span class="hl2">which task type fits best?</span>`, "line");
+    printOptions(opts, "auto", false);
+    input.placeholder = `pick 1-${opts.length}, or enter for auto`;
+  };
+
+  const askNextQuestion = () => {
+    if (iv.qi >= iv.plan.questions.length) {
+      finishInterview();
+      return;
+    }
+    const q = iv.plan.questions[iv.qi];
+    append(`<span class="b">[?]</span> <span class="hl2">${esc(q.prompt)}</span>`, "line");
+    printOptions(q.options, q.default, true);
+    input.placeholder = "answer, enter = default/skip";
+  };
+
+  const finishInterview = async () => {
     append("<span class='hr'>" + "─".repeat(64) + "</span>");
-    await bootLine("parser", ["<span class='ok'>✓</span> reading raw idea…"], 120);
+    await bootLine("planner", ["<span class='ok'>✓</span> blueprint built · steps + quality bar locked"], 160);
+    await bootLine("renderer", ["<span class='ok'>✓</span> optimized prompt compiled"], 160);
 
     let data;
     try {
-      const res = await fetch("/api/optimize", {
+      const res = await fetch("/api/interview/finish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idea: iv.idea, answers: iv.answers, task_type: iv.taskType }),
+      });
+      data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    } catch (e) {
+      append(`<span class="b">[error]</span> ${esc(String(e.message || e))}`, "err");
+      iv = null;
+      resetInputMode();
+      busy = false;
+      input.focus();
+      return;
+    }
+
+    lastPrompt = data.optimized_prompt;
+    renderResult(data);
+    if (data.diary && data.diary.logged) {
+      append(`<span class="b">[diary ✓]</span> marked in logs/daily_log.md · streak <span class="ye">${data.diary.streak_days}d</span>`, "diaryline");
+    }
+    iv = null;
+    resetInputMode();
+    busy = false;
+    input.focus();
+  };
+
+  const handleInterviewInput = async (raw) => {
+    busy = true;
+    if (iv.step === "type") {
+      const opts = iv.plan.type_options;
+      const n = /^\d+$/.test(raw) ? parseInt(raw, 10) : 0;
+      if (raw && !(n >= 1 && n <= opts.length)) {
+        append(`<span class="b">[warn]</span> pick 1-${opts.length}, or enter for auto`, "err");
+        busy = false;
+        input.focus();
+        return;
+      }
+      iv.taskType = raw ? opts[n - 1].value : "auto";
+      if (iv.taskType !== "auto") {
+        const picked = opts[n - 1].label;
+        append(`    <span class="dim">→ ${esc(picked)}</span>`, "line");
+      }
+      iv.step = "questions";
+      iv.qi = 0;
+      busy = false;
+      askNextQuestion();
+      input.focus();
+      return;
+    }
+
+    const q = iv.plan.questions[iv.qi];
+    let val = raw;
+    if (!raw) val = q.default || "";
+    else if (q.options.length) {
+      const n = /^\d+$/.test(raw) ? parseInt(raw, 10) : 0;
+      if (n >= 1 && n <= q.options.length) val = q.options[n - 1].value;
+    }
+    if (val) {
+      iv.answers[q.id] = val;
+      append(`    <span class="dim">→ ${esc(val)}</span>`, "line");
+    } else {
+      append(`    <span class="dim">→ skipped</span>`, "line");
+    }
+    iv.qi++;
+    busy = false;
+    askNextQuestion();
+    input.focus();
+  };
+
+  const resetInputMode = () => {
+    input.placeholder = "paste your raw idea, then press enter";
+  };
+
+  const startInterview = async (raw) => {
+    busy = true;
+    append("<span class='hr'>" + "─".repeat(64) + "</span>");
+    await bootLine("parser", ["<span class='ok'>✓</span> reading raw idea…"], 120);
+
+    let plan;
+    try {
+      const res = await fetch("/api/interview/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idea: raw }),
       });
-      data = await res.json();
-      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      plan = await res.json();
+      if (!res.ok) throw new Error(plan.error || `HTTP ${res.status}`);
     } catch (e) {
       append(`<span class="b">[error]</span> ${esc(String(e.message || e))}`, "err");
       busy = false;
@@ -429,24 +518,43 @@
       return;
     }
 
-    const a = data.analysis;
-    const type = a ? a.task_type : "general";
-    const sig = a && a.detected_signals ? a.detected_signals.length : 0;
+    const a = plan.analysis;
+    await bootLine("analyze", [`<span class='ok'>✓</span> <span class='hl'>task_type: ${esc(plan.detected_type)}</span>`, `score ${plan.overall_score}/100`], 180);
+    await bootLine("interview", [`<span class='ok'>✓</span> ${plan.questions.length + 1} questions queued · answer fast or take defaults`], 160);
 
-    await bootLine("analyze", [`<span class='ok'>✓</span> <span class='hl'>task_type: ${esc(type)}</span>`, `${sig} signals`], 180);
-    if (a) {
-      await bootLine("analyze", [`<span class='ok'>✓</span> clarity ${a.clarity_score} · specificity ${a.specificity_score} · completeness ${a.completeness_score}`], 180);
-    }
-    await bootLine("planner", ["<span class='ok'>✓</span> blueprint built · steps + quality bar locked"], 160);
-    await bootLine("renderer", ["<span class='ok'>✓</span> optimized prompt compiled"], 160);
-
-    lastPrompt = data.optimized_prompt;
-    renderResult(data);
-    if (data.diary && data.diary.logged) {
-      append(`<span class="b">[diary ✓]</span> marked in logs/daily_log.md · streak <span class="ye">${data.diary.streak_days}d</span>`, "diaryline");
-    }
+    iv = { idea: raw, plan, step: "type", qi: 0, answers: {}, taskType: "auto" };
     busy = false;
+    askTypeStep();
     input.focus();
+  };
+
+  const run = async () => {
+    const raw = input.value.trim();
+    if (!raw || busy) {
+      if (!raw) append(`<span class="b">[warn]</span> empty input — nothing to optimize`, "err");
+      return;
+    }
+    echoInput(raw);
+    input.value = "";
+    autoGrow();
+    history.push(raw);
+    histIdx = history.length;
+
+    if (iv) {
+      await handleInterviewInput(raw);
+      return;
+    }
+
+    if (raw.toLowerCase().startsWith("/log")) {
+      await addManualLog(raw);
+      return;
+    }
+    if (raw.toLowerCase() === "/today" || raw.toLowerCase() === "/log view") {
+      await showLog();
+      return;
+    }
+
+    await startInterview(raw);
   };
 
   const autoGrow = () => {
@@ -492,12 +600,16 @@
     }, 900);
   });
 
-  clearBtn.addEventListener("click", () => {
+  const clearBtnClick = () => {
     screen.innerHTML = "";
     lastPrompt = "";
+    iv = null;
+    resetInputMode();
     boot();
     input.focus();
-  });
+  };
+
+  clearBtn.addEventListener("click", clearBtnClick);
 
   logBtn.addEventListener("click", showLog);
 
@@ -506,7 +618,8 @@
     append("&nbsp;", "line");
     append("<span class='dim'>raw idea in — top 1% prompt out. no cloud, no keys.</span>", "line");
     append("&nbsp;", "line");
-    append("<span class='dim'>usage:</span> type or paste your idea (multi-line ok) and press <span class='dim' style='color:var(--yellow)'>enter</span>", "line");
+    append("<span class='dim'>flow:</span> paste idea → <span style='color:var(--yellow)'>answer a few quick questions</span> → pick task type → final prompt", "line");
+    append("<span class='dim'>tip:</span> press <span style='color:var(--yellow)'>enter</span> on any question to take the recommended default", "line");
     append("<span class='dim'>diary:</span> <span style='color:var(--yellow)'>/log</span> what you did | how much   ·   <span style='color:var(--yellow)'>/today</span> view the daily log", "line");
     append("&nbsp;", "line");
   };

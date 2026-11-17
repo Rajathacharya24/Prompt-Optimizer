@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .parser import _ROLE_BY_TYPE, _TASK_TYPES, apply_task_type_override, parse_and_analyze
+from .parser import _TASK_TYPES, apply_task_type_override, parse_and_analyze
 from .planner import build_blueprint
 from .renderer import render_optimized_prompt
 from .schemas import (
@@ -116,14 +116,6 @@ def build_interview(raw_text: str) -> InterviewPlan:
     return InterviewPlan(detected_type=detected, type_options=type_options, questions=questions, analysis=analysis)
 
 
-_FIELD_LINES = {
-    "audience": "audience",
-    "output_format": "output format",
-    "tone": "tone",
-    "constraints": "constraints",
-    "must_include": "must include",
-}
-
 _FIELD_LABELS = {
     "audience": "audience pinned",
     "output_format": "output format pinned",
@@ -133,23 +125,41 @@ _FIELD_LABELS = {
 }
 
 
-def apply_interview(raw_text: str, answers: dict[str, str], task_type: str = "") -> OptimizationResult:
-    answers = {k: (v or "").strip() for k, v in (answers or {}).items()}
-    depth = answers.get("depth", "standard")
+def _overlay_answers(idea, analysis, answers: dict[str, str], depth: str) -> tuple[list[str], list[str]]:
+    """Apply interview answers directly onto the parsed idea. Returns (improvements, answered_field_ids)."""
+    from .parser import _split_items
 
-    additions: list[str] = []
     improvements: list[str] = []
-    constraint_parts: list[str] = []
+    answered: list[str] = []
 
-    for field_id, label in _FIELD_LINES.items():
-        value = answers.get(field_id, "")
-        if not value:
-            continue
-        if field_id == "constraints":
-            constraint_parts.append(value)
-        else:
-            additions.append(f"{label}: {value}")
-        improvements.append(f"{_FIELD_LABELS[field_id]}: {value!r}")
+    value = answers.get("audience", "")
+    if value:
+        idea.audience = value.rstrip(".!?")
+        improvements.append(f"{_FIELD_LABELS['audience']}: {value!r}")
+        answered.append("audience")
+
+    value = answers.get("output_format", "")
+    if value:
+        idea.output_format = value.rstrip(".!?")
+        improvements.append(f"{_FIELD_LABELS['output_format']}: {value!r}")
+        answered.append("output_format")
+
+    value = answers.get("tone", "")
+    if value:
+        idea.tone = value.rstrip(".!?")
+        improvements.append(f"{_FIELD_LABELS['tone']}: {value!r}")
+        answered.append("tone")
+
+    value = answers.get("must_include", "")
+    if value:
+        idea.must_include = _split_items(value)
+        improvements.append(f"{_FIELD_LABELS['must_include']}: {value!r}")
+        answered.append("must_include")
+
+    constraint_parts = [answers.get("constraints", "").strip()] if answers.get("constraints", "").strip() else []
+    if constraint_parts:
+        improvements.append(f"{_FIELD_LABELS['constraints']}: {constraint_parts[0]!r}")
+        answered.append("constraints")
 
     if depth == "quick":
         constraint_parts.append("Keep the output minimal and skimmable; no filler")
@@ -159,17 +169,28 @@ def apply_interview(raw_text: str, answers: dict[str, str], task_type: str = "")
         improvements.append("depth set to deep dive")
 
     if constraint_parts:
-        additions.append(f"constraints: {'; '.join(constraint_parts)}")
+        idea.constraints = _split_items("; ".join(constraint_parts))
 
-    augmented = raw_text.strip()
-    if additions:
-        augmented = augmented + "\n" + "\n".join(additions)
+    return improvements, answered
 
-    idea, analysis = parse_and_analyze(augmented)
+
+def apply_interview(raw_text: str, answers: dict[str, str], task_type: str = "") -> OptimizationResult:
+    answers = {k: (v or "").strip() for k, v in (answers or {}).items()}
+    depth = answers.get("depth", "standard")
+
+    idea, analysis = parse_and_analyze(raw_text)
+    improvements, answered = _overlay_answers(idea, analysis, answers, depth)
 
     if task_type and task_type != "auto" and apply_task_type_override(idea, task_type):
         improvements.append(f"task type switched: {analysis.task_type} → {task_type}")
-        analysis.task_type = task_type
+
+    if improvements:
+        # re-score with the fields the interview filled in
+        from .parser import analyze_raw_idea
+
+        keyword_signals = [s.split(":", 1)[1] for s in analysis.detected_signals if s.startswith("keyword:")]
+        explicit_fields = set(analysis.provided_fields) | set(answered)
+        analysis = analyze_raw_idea(raw_text, idea, explicit_fields, keyword_signals)
 
     if not improvements:
         improvements.append("no changes from interview — defaults kept")
