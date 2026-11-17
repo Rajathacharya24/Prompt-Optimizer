@@ -5,6 +5,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from . import diary
+from .interview import apply_interview, build_interview
 from .workflow import optimize_raw_idea
 
 _UI_DIR = Path(__file__).resolve().parent / "ui"
@@ -34,6 +35,52 @@ class OptimizerHandler(BaseHTTPRequestHandler):
             return
         self._send(404, b"not found", "text/plain; charset=utf-8")
 
+    def _read_json(self) -> dict:
+        length = int(self.headers.get("Content-Length", 0))
+        return json.loads(self.rfile.read(length) or b"{}")
+
+    def _interview_start(self) -> None:
+        try:
+            payload = self._read_json()
+            raw_idea = str(payload.get("idea", "")).strip()
+            if not raw_idea:
+                self._send_json(400, {"error": "Empty idea. Give me something to work with."})
+                return
+            plan = build_interview(raw_idea)
+            data = plan.to_dict()
+            data["word_count"] = data["analysis"]["word_count"]
+            data["overall_score"] = data["analysis"]["overall_score"]
+            self._send_json(200, data)
+        except json.JSONDecodeError:
+            self._send_json(400, {"error": "Invalid JSON body"})
+        except Exception as exc:  # pragma: no cover - defensive
+            self._send_json(500, {"error": f"Interview start failure: {exc}"})
+
+    def _interview_finish(self) -> None:
+        try:
+            payload = self._read_json()
+            raw_idea = str(payload.get("idea", "")).strip()
+            answers = payload.get("answers") or {}
+            task_type = str(payload.get("task_type", "")).strip()
+            if not raw_idea:
+                self._send_json(400, {"error": "Empty idea. Give me something to work with."})
+                return
+            if not isinstance(answers, dict):
+                self._send_json(400, {"error": "answers must be an object"})
+                return
+            result = apply_interview(raw_idea, {str(k): str(v) for k, v in answers.items()}, task_type)
+            out = result.to_dict()
+            try:
+                diary.log_session(result)
+                out["diary"] = {"logged": True, "streak_days": diary.stats()["streak_days"]}
+            except Exception:  # logging must never break optimization
+                out["diary"] = {"logged": False}
+            self._send_json(200, out)
+        except json.JSONDecodeError:
+            self._send_json(400, {"error": "Invalid JSON body"})
+        except Exception as exc:  # pragma: no cover - defensive
+            self._send_json(500, {"error": f"Interview finish failure: {exc}"})
+
     def do_POST(self) -> None:
         if self.path == "/api/log":
             try:
@@ -45,6 +92,12 @@ class OptimizerHandler(BaseHTTPRequestHandler):
                 self._send_json(400, {"error": "Invalid JSON body"})
             except Exception as exc:  # pragma: no cover - defensive
                 self._send_json(500, {"error": f"Log failure: {exc}"})
+            return
+        if self.path == "/api/interview/start":
+            self._interview_start()
+            return
+        if self.path == "/api/interview/finish":
+            self._interview_finish()
             return
         if self.path != "/api/optimize":
             self._send(404, b"not found", "text/plain; charset=utf-8")
