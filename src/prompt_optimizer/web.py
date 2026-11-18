@@ -100,6 +100,23 @@ class OptimizerHandler(BaseHTTPRequestHandler):
         if self.path == "/api/interview/finish":
             self._interview_finish()
             return
+        if self.path == "/api/prompt-optimizer":
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                payload = json.loads(self.rfile.read(length) or b"{}")
+                raw_idea = str(payload.get("idea", payload.get("rawIdea", ""))).strip()
+                if not raw_idea:
+                    self._send_json(400, {"error": "Empty idea. Give me something to work with."})
+                    return
+                result = optimize_to_spec(raw_idea)
+                data = result.to_dict()
+                data["text"] = result.formatted
+                self._send_json(200, data)
+            except json.JSONDecodeError:
+                self._send_json(400, {"error": "Invalid JSON body"})
+            except Exception as exc:
+                self._send_json(500, {"error": f"Optimizer failure: {exc}"})
+            return
         if self.path != "/api/optimize":
             self._send(404, b"not found", "text/plain; charset=utf-8")
             return

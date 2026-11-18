@@ -81,6 +81,27 @@ prompt-optimizer optimize --file idea.txt
 
 Add `--json` for machine-readable output (includes the analysis scores).
 
+### API
+
+Start the server with `python -m prompt_optimizer.web`, then call the Prompt Optimizer endpoint:
+
+```bash
+curl -X POST http://127.0.0.1:7860/api/prompt-optimizer \
+  -H 'Content-Type: application/json' \
+  -d '{"idea":"Goal: Build a launch email. Audience: Founders. Constraints: 120 words max. Output: Subject + body."}'
+```
+
+Response JSON fields:
+
+- `formatted`: exact text with `**Optimized Prompt:**` (fenced block), `**Assumptions:**`, and optional `**Quick questions (optional):**`
+- `optimized_prompt`: prompt text inside the fence
+- `assumptions`: list of assumptions made
+- `quick_questions`: list of questions (only when the idea is too vague)
+- `vague`: true when questions were returned instead of a prompt
+- `text`: same as `formatted`
+
+The body also accepts `rawIdea` as the input key. Empty input returns HTTP 400.
+
 ## Engine (v1.0)
 
 1. **Parser** — extracts labeled fields, infers the rest, detects task type
