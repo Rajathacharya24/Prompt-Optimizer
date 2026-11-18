@@ -6,6 +6,7 @@ from pathlib import Path
 
 from . import diary
 from .interview import apply_interview, build_interview
+from .spec_optimizer import optimize_to_spec
 from .workflow import optimize_raw_idea
 
 _UI_DIR = Path(__file__).resolve().parent / "ui"
